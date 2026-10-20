@@ -1,0 +1,282 @@
+<title>Study Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one summary band on top, then a responsive grid of module cards.
+   Each card is a chapter x (Course | TD | TP) matrix of tappable boxes. */
+:root {
+  --bg: #e9edf2;
+  --surface: #f7f9fb;
+  --fg: #18202b;
+  --muted: #566274;
+  --line: #bcc5d1;
+  --track: #d6dce5;
+  --accent: #2446c9;
+  --on: #ffffff;
+  --ml: 40%;
+  --ms: 62%;
+  --font-display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151d;
+    --surface: #17202b;
+    --fg: #e6ebf2;
+    --muted: #93a0b3;
+    --line: #34415a;
+    --track: #263243;
+    --accent: #8ea6ff;
+    --on: #0f151d;
+    --ml: 66%;
+    --ms: 64%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151d;
+  --surface: #17202b;
+  --fg: #e6ebf2;
+  --muted: #93a0b3;
+  --line: #34415a;
+  --track: #263243;
+  --accent: #8ea6ff;
+  --on: #0f151d;
+  --ml: 66%;
+  --ms: 64%;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin-inline: auto; display: flex; flex-direction: column; gap: 22px; }
+
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px 32px; }
+.eyebrow { margin: 0 0 4px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-family: var(--font-display); font-size: clamp(2rem, 5vw, 2.9rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; text-wrap: balance; }
+.total { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.big { font-family: var(--font-mono); font-size: clamp(2.2rem, 6vw, 3.2rem); font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; }
+.sub { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; font-size: 13.5px; color: var(--muted); padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.legend span.item { display: inline-flex; align-items: center; gap: 8px; }
+.legend .terms { font-family: var(--font-mono); font-size: 12px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.card {
+  --mc: hsl(var(--h) var(--ms) var(--ml));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.card header { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.code { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .08em; color: var(--mc); border: 1px solid var(--mc); padding: 1px 6px; border-radius: 4px; flex: none; }
+h2 { margin: 0; font-size: 1.12rem; font-weight: 600; letter-spacing: -.01em; min-width: 0; overflow-wrap: anywhere; }
+.pct { margin-left: auto; font-family: var(--font-mono); font-size: 1.05rem; font-variant-numeric: tabular-nums; color: var(--mc); }
+.bar { display: flex; height: 6px; background: var(--track); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; transition: width .25s ease; }
+.bar .d { background: var(--mc); }
+.bar .p { background: color-mix(in srgb, var(--mc) 40%, transparent); }
+.meta { margin: -4px 0 0; font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.grid { display: grid; grid-template-columns: 3.4rem repeat(var(--n), minmax(0, 1fr)); gap: 8px; align-items: center; justify-items: center; margin-top: 2px; }
+.th { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ch { justify-self: start; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.cell {
+  --mc: hsl(var(--h) var(--ms) var(--ml));
+  appearance: none;
+  width: 40px; height: 40px;
+  border: 1.5px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--on);
+  padding: 0;
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.cell svg { width: 20px; height: 20px; opacity: 0; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: opacity .15s ease; }
+.cell:hover { border-color: var(--mc); }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cell[data-s="1"] { border-color: var(--mc); background: linear-gradient(to top, var(--mc) 50%, transparent 50%); }
+.cell[data-s="2"] { border-color: var(--mc); background: var(--mc); }
+.cell[data-s="2"] svg { opacity: 1; }
+.demo { width: 22px; height: 22px; cursor: default; border-radius: 5px; border-width: 1.5px; }
+.demo svg { width: 13px; height: 13px; }
+
+.foot { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+@media (max-width: 480px) {
+  body { padding-block: 20px 32px; }
+  .card { padding: 14px 14px 16px; }
+  .cell { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar i, .cell, .cell svg { transition: none; }
+}
+</style>
+
+<main class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">6 modules · 6 chapters each · Oct to mid-Dec</p>
+      <h1>Study Tracker</h1>
+    </div>
+    <div class="total">
+      <span class="big" id="tpct">0%</span>
+      <span class="sub" id="tsub">0 of 0 done</span>
+    </div>
+  </header>
+
+  <div class="legend" style="--h:215">
+    <span class="item"><button class="cell demo" data-s="0" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button>Not started</span>
+    <span class="item"><button class="cell demo" data-s="1" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button>In progress</span>
+    <span class="item"><button class="cell demo" data-s="2" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></button>Done</span>
+    <span class="terms">TD = exercises · TP = lab · tap a box to change its state</span>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <p class="foot" id="status">Progress saves automatically.</p>
+</main>
+
+<script>
+(function () {
+  var MODS = [
+    { id: 'web',  code: 'WEB',  name: 'Web Development',     h: 215, types: ['C', 'TD'] },
+    { id: 'sec',  code: 'SEC',  name: 'Security',            h: 350, types: ['C', 'TD', 'TP'] },
+    { id: 'rev',  code: 'REV',  name: 'Reverse Engineering', h: 275, types: ['C'] },
+    { id: 'voip', code: 'VOIP', name: 'VoIP',                h: 168, types: ['C', 'TD', 'TP'] },
+    { id: 'rsf',  code: 'RSF',  name: 'Réseaux sans fil',    h: 30,  types: ['C', 'TD', 'TP'] },
+    { id: 'iot',  code: 'IoT',  name: 'Internet of Things',  h: 95,  types: ['C', 'TP'] }
+  ];
+  var CHAPTERS = 6;
+  var TH = { C: 'Course', TD: 'TD', TP: 'TP' };
+  var TLONG = { C: 'Course', TD: 'Exercises (TD)', TP: 'Lab (TP)' };
+  var STATE_NAMES = ['not started', 'in progress', 'done'];
+  var LS_KEY = 'study-tracker-v1';
+  var CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) { state = {}; }
+
+  function key(m, t, c) { return m.id + ':' + t + ':' + c; }
+  function sig(o) { return JSON.stringify(Object.keys(o).sort().map(function (k) { return [k, o[k]]; })); }
+
+  /* build the cards once, then only update classes and numbers */
+  var html = '';
+  MODS.forEach(function (m) {
+    html += '<section class="card" data-m="' + m.id + '" style="--h:' + m.h + ';--n:' + m.types.length + '">';
+    html += '<header><span class="code">' + m.code + '</span><h2>' + m.name + '</h2><span class="pct" data-pct>0%</span></header>';
+    html += '<div class="bar"><i class="d"></i><i class="p"></i></div>';
+    html += '<p class="meta" data-meta></p>';
+    html += '<div class="grid"><span></span>';
+    m.types.forEach(function (t) { html += '<span class="th" title="' + TLONG[t] + '">' + TH[t] + '</span>'; });
+    for (var c = 1; c <= CHAPTERS; c++) {
+      html += '<span class="ch">Ch ' + c + '</span>';
+      m.types.forEach(function (t) {
+        html += '<button type="button" class="cell" data-k="' + key(m, t, c) + '" data-label="' + m.name + ', ' + TLONG[t] + ', chapter ' + c + '" data-s="0">' + CHECK + '</button>';
+      });
+    }
+    html += '</div></section>';
+  });
+  document.getElementById('cards').innerHTML = html;
+
+  function refresh() {
+    var cells = document.querySelectorAll('.cards .cell');
+    for (var i = 0; i < cells.length; i++) {
+      var b = cells[i], s = state[b.dataset.k] || 0;
+      b.dataset.s = String(s);
+      b.setAttribute('aria-label', b.dataset.label + ': ' + STATE_NAMES[s] + '. Tap to change.');
+    }
+    var allDone = 0, allProg = 0, allTotal = 0;
+    MODS.forEach(function (m) {
+      var done = 0, prog = 0, total = m.types.length * CHAPTERS;
+      m.types.forEach(function (t) {
+        for (var c = 1; c <= CHAPTERS; c++) {
+          var s = state[key(m, t, c)] || 0;
+          if (s === 2) done++; else if (s === 1) prog++;
+        }
+      });
+      var card = document.querySelector('.card[data-m="' + m.id + '"]');
+      card.querySelector('[data-pct]').textContent = Math.round(done / total * 100) + '%';
+      card.querySelector('.bar .d').style.width = (done / total * 100) + '%';
+      card.querySelector('.bar .p').style.width = (prog / total * 100) + '%';
+      card.querySelector('[data-meta]').textContent = done + ' of ' + total + ' done' + (prog ? ' · ' + prog + ' in progress' : '');
+      allDone += done; allProg += prog; allTotal += total;
+    });
+    document.getElementById('tpct').textContent = Math.round(allDone / allTotal * 100) + '%';
+    document.getElementById('tsub').textContent = allDone + ' of ' + allTotal + ' done' + (allProg ? ' · ' + allProg + ' in progress' : '');
+  }
+
+  function saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+
+  /* optional sync to the artifact's private store; the page works without it */
+  var ref = null, dirty = false, writing = false, timer = null;
+  function setStatus(mode) {
+    document.getElementById('status').textContent = mode === 'sync'
+      ? 'Progress saves automatically and follows you across devices.'
+      : 'Progress saves automatically in this browser.';
+  }
+  function queue() { dirty = true; clearTimeout(timer); timer = setTimeout(flush, 500); }
+  async function flush() {
+    if (!ref || writing || !dirty) return;
+    writing = true; dirty = false;
+    try { await ref.set({ s: JSON.parse(JSON.stringify(state)) }); }
+    catch (e) { setStatus('local'); }
+    writing = false;
+    if (dirty) flush();
+  }
+
+  document.getElementById('cards').addEventListener('click', function (e) {
+    var b = e.target.closest('.cell');
+    if (!b || !b.dataset.k) return;
+    var next = ((state[b.dataset.k] || 0) + 1) % 3;
+    if (next === 0) delete state[b.dataset.k]; else state[b.dataset.k] = next;
+    refresh(); saveLocal(); queue();
+  });
+
+  refresh();
+  setStatus('local');
+
+  (async function () {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      var db = await window.claude.use('db');
+      var user = await window.claude.use('user');
+      if (!db || !user) return;
+      var id = await user.id();
+      if (!id) return;
+      ref = db.collection('data/users/' + id).doc('progress');
+      ref.onSnapshot(function (snap) {
+        if (snap.metadata && snap.metadata.hasPendingWrites) return;
+        setStatus('sync');
+        if (!snap.exists) { if (Object.keys(state).length) queue(); return; }
+        if (dirty || writing) return;
+        var remote = (snap.data() || {}).s || {};
+        if (sig(remote) !== sig(state)) {
+          state = Object.assign({}, remote);
+          saveLocal(); refresh();
+        }
+      }, function () { setStatus('local'); });
+    } catch (e) { setStatus('local'); }
+  })();
+})();
+</script>
